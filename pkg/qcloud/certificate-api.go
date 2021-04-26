@@ -8,10 +8,10 @@ import (
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
 	sslsdk "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ssl/v20191205"
 	"io/ioutil"
+	"strings"
 )
 
-func DownloadCertificate(certId *string, secretId string, secretKey string) (certBytes []byte, keyBytes []byte, caBytes []byte, err error) {
-
+func DownloadCertificate(certId *string, secretId string, secretKey string) (certBytes []byte, keyBytes []byte, err error) {
 	reqProfile := profile.NewClientProfile()
 	reqProfile.HttpProfile.ReqMethod = "GET"
 
@@ -21,7 +21,7 @@ func DownloadCertificate(certId *string, secretId string, secretKey string) (cer
 	}
 	client, err := sslsdk.NewClient(&credentials, "", reqProfile)
 	if err != nil{
-		return nil,nil, nil, err
+		return nil,nil, err
 	}
 
 	request := sslsdk.NewDownloadCertificateRequest()
@@ -29,7 +29,7 @@ func DownloadCertificate(certId *string, secretId string, secretKey string) (cer
 
 	certificate, err := client.DownloadCertificate(request)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	zipContent := certificate.Response.Content
@@ -37,22 +37,27 @@ func DownloadCertificate(certId *string, secretId string, secretKey string) (cer
 
 	zipReader, err := zip.NewReader(bytes.NewReader(zipBytes), int64(len(zipBytes)))
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil,  err
 	}
 
 	for _, zipFile := range zipReader.File {
+		fileName := zipFile.Name
+		if len(fileName) < 4 || strings.Contains(fileName, "/")  ||
+			(!strings.HasSuffix(fileName, ".pem") && !strings.HasSuffix(fileName, ".key")) {
+			continue
+		}
+
 		unzippedFileBytes, err := readZipFile(zipFile)
 		if err != nil {
 			continue
 		}
 
-		switch zipFile.Name {
-		case "certificate":
+		ext := string(fileName[len(fileName)-4:])
+		switch ext {
+		case ".pem":
 			certBytes = unzippedFileBytes
-		case "key":
+		case ".key":
 			keyBytes = unzippedFileBytes
-		case "ca":
-			caBytes = unzippedFileBytes
 		}
 	}
 

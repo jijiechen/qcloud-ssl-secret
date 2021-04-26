@@ -29,12 +29,13 @@ func main() {
 	}
 
 	cert, err := tls.LoadX509KeyPair("/etc/qcloud-ssl-secret/tls.crt", "/etc/qcloud-ssl-secret/tls.key")
+	//cert, err := tls.LoadX509KeyPair("./tls.crt", "./tls.key")
 	if err != nil {
 		klog.Errorf("Failed to load server certificate and key pair: %v", err)
 		os.Exit(127)
 	}
 
-	server := web.WebhookHandler{
+	webhookHandler := web.WebhookHandler{
 		Server: &http.Server{
 			Addr: fmt.Sprintf(":%d", 8080),
 			TLSConfig: &tls.Config{
@@ -44,12 +45,12 @@ func main() {
 		QCloudParams: &params,
 	}
 
-	handler := http.NewServeMux()
-	handler.HandleFunc("/mutate", server.Mutate)
-	server.Server.Handler = handler
+	httpHandler := http.NewServeMux()
+	httpHandler.HandleFunc("/mutate", webhookHandler.Mutate)
+	webhookHandler.Server.Handler = httpHandler
 
 	go func() {
-		if err := server.Server.ListenAndServeTLS("", ""); err != nil {
+		if err := webhookHandler.Server.ListenAndServeTLS("", ""); err != nil {
 			klog.Errorf("Failed to listen and serve webhook: %v", err)
 			os.Exit(1)
 		}
@@ -62,7 +63,7 @@ func main() {
 	<-signalChannel
 
 	klog.Infof("Termination signal received, shutting down...")
-	if err := server.Server.Shutdown(context.Background()); err != nil {
+	if err := webhookHandler.Server.Shutdown(context.Background()); err != nil {
 		klog.Errorf("Error shutting down: %v", err)
 	}
 }

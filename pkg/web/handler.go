@@ -108,12 +108,12 @@ func (handler *WebhookHandler) mutate(admissionReview *admissionv1.AdmissionRevi
 		return allowed
 	}
 
-	certBytes, keyBytes, caBytes, err := qcloud.DownloadCertificate(&certId, handler.QCloudParams.SecretId, handler.QCloudParams.SecretKey)
+	certBytes, keyBytes, err := qcloud.DownloadCertificate(&certId, handler.QCloudParams.SecretId, handler.QCloudParams.SecretKey)
 	if err != nil {
 		klog.Warning("Failed to download certificate %s: %v", certId, err)
 	}
 
-	patches := generatePatch(certBytes, keyBytes, caBytes)
+	patches := generatePatch(certBytes, keyBytes)
 	patchesBytes, err := json.Marshal(patches)
 	if err != nil {
 		klog.Warning("Failed to marshal patch operations. error: %v", err)
@@ -135,7 +135,11 @@ func (handler *WebhookHandler) mutate(admissionReview *admissionv1.AdmissionRevi
 	}
 }
 
-func generatePatch(certBytes []byte, keyBytes []byte, caBytes []byte) (patch []ResourcePatchOperation) {
+func generatePatch(certBytes []byte, keyBytes []byte) (patch []ResourcePatchOperation) {
+	if certBytes == nil || keyBytes == nil {
+		return []ResourcePatchOperation{}
+	}
+
 	// change type? type: kubernetes.io/tls
 	certStr := base64.StdEncoding.EncodeToString(certBytes)
 	keyStr := base64.StdEncoding.EncodeToString(keyBytes)
@@ -150,14 +154,5 @@ func generatePatch(certBytes []byte, keyBytes []byte, caBytes []byte) (patch []R
 		Path:  "/spec/data/tls.key",
 		Value: keyStr,
 	})
-
-	if caBytes != nil {
-		caStr := base64.StdEncoding.EncodeToString(caBytes)
-		patch = append(patch, ResourcePatchOperation{
-			Op:    "add",
-			Path:  "/spec/data/ca.crt",
-			Value: caStr,
-		})
-	}
 	return
 }
