@@ -29,7 +29,7 @@ func main() {
 	}
 
 	cert, err := tls.LoadX509KeyPair("/etc/qcloud-ssl-secret/tls.crt", "/etc/qcloud-ssl-secret/tls.key")
-	//cert, err := tls.LoadX509KeyPair("./tls.crt", "./tls.key")
+	//cert, err := tls.LoadX509KeyPair("./deployment/tls.crt", "./deployment/tls.key")
 	if err != nil {
 		klog.Errorf("Failed to load server certificate and key pair: %v", err)
 		os.Exit(127)

@@ -123,6 +123,7 @@ func (handler *WebhookHandler) mutate(admissionReview *admissionv1.AdmissionRevi
 		klog.Warning("Failed to download certificate %s: %v", certId, err)
 	}
 
+	klog.Info("Generating patches using downloaded certificate %s. cert length: %d, key length: %d", certId, len(certBytes), len(keyBytes))
 	patches := generatePatch(certBytes, keyBytes)
 	patchesBytes, err := json.Marshal(patches)
 	if err != nil {
