@@ -108,6 +108,16 @@ func (handler *WebhookHandler) mutate(admissionReview *admissionv1.AdmissionRevi
 		return allowed
 	}
 
+	_, hasExistingCrt := objectMeta.GetAnnotations()["tls.crt"]
+	if hasExistingCrt {
+		return allowed
+	}
+
+	_, hasExistingKey := objectMeta.GetAnnotations()["tls.key"]
+	if hasExistingKey {
+		return allowed
+	}
+
 	certBytes, keyBytes, err := qcloud.DownloadCertificate(&certId, handler.QCloudParams.SecretId, handler.QCloudParams.SecretKey)
 	if err != nil {
 		klog.Warning("Failed to download certificate %s: %v", certId, err)
