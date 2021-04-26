@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"flag"
 	"fmt"
+	"github.com/namsral/flag"
 	"net/http"
 	"os"
 	"os/signal"
